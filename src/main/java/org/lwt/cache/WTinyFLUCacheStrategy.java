@@ -22,4 +22,8 @@ public class WTinyFLUCacheStrategy implements CacheStrategy {
     cache.put(key, true);
     return res;
   }
+
+  @Override public void printRes() {
+    return;
+  }
 }

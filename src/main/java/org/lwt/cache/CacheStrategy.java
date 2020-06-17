@@ -10,4 +10,6 @@ interface CacheStrategy {
    *          1 This key is in cache.
    */
   int notify(Object key);
+
+  void printRes();
 }

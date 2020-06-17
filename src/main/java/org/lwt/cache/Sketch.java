@@ -1,5 +1,9 @@
 package org.lwt.cache;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Sketch is a two-dimensional array T[i][j] with d rows, i = 1,....,d, and w columns,
  * j = 1,......w. Each of the d * w array buckets is a counter that is initially set
@@ -52,35 +56,65 @@ public abstract class Sketch {
     }
   }
 
-  public abstract boolean update(String key);
+  /**
+   *
+   * @param key
+   * @return True means this key should be put into cache.
+   * @throws InvalidHashFunctionIndexException
+   */
+  public abstract boolean update(String key)
+      throws InvalidHashFunctionIndexException;
 
-  public abstract int estimate(String key);
+  public int estimate(String key) throws InvalidHashFunctionIndexException {
+    int res = Integer.MAX_VALUE;
+    for (int i = 0; i < d; ++i) {
+      int curVal = t[i][calcHash(key, i)];
+      if (curVal < res) {
+        res = curVal;
+      }
+    }
+    return res;
+  }
+
+  protected List<Integer> add(String key) throws InvalidHashFunctionIndexException {
+    return add(key, 1);
+  }
+
+  protected List<Integer> add(String key, int addend) throws InvalidHashFunctionIndexException {
+    List<Integer> num = new ArrayList<Integer>();
+    for (int i = 0; i < d; ++i) {
+      int j = calcHash(key, i);
+      t[i][j] += addend;
+      num.add(t[i][j]);
+    }
+    return num;
+  }
 
   protected int calcHash(String key, int hashFunctionIndex)
       throws InvalidHashFunctionIndexException{
     switch (hashFunctionIndex) {
     case HASH_JAVA:
-      return JAVAHash(key);
+      return Math.abs(JAVAHash(key));
     case HASH_ONEBYONE:
-      return oneByOneHash(key);
+      return Math.abs(oneByOneHash(key));
     case HASH_BERNSTEIN:
-      return bernsteinHash(key);
+      return Math.abs(bernsteinHash(key));
     case HASH_JS:
-      return JSHash(key);
+      return Math.abs(JSHash(key));
     case HASH_FNV:
-      return FNVHash(key);
+      return Math.abs(FNVHash(key));
     case HASH_REFNV:
-      return reFNVHash(key);
+      return Math.abs(reFNVHash(key));
     case HASH_RS:
-      return RSHash(key);
+      return Math.abs(RSHash(key));
     case HASH_PJW:
-      return PJWHash(key);
+      return Math.abs(PJWHash(key));
     case HASH_ELF:
-      return ELFHash(key);
+      return Math.abs(ELFHash(key));
     case HASH_ADDITIVE:
-      return additiveHash(key);
+      return Math.abs(additiveHash(key));
     case HASH_ROTATE:
-      return rotatingHash(key);
+      return Math.abs(rotatingHash(key));
     }
     throw new InvalidHashFunctionIndexException("Index: " + hashFunctionIndex + ".");
   }

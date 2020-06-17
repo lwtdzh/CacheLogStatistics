@@ -100,7 +100,7 @@ class Analyser {
 
     rm = new SimpleRequestMapper(blockSize);
     rs = new SimpleRequestStream();
-    cs = new WTinyFLUCacheStrategy(cacheSize);
+    cs = new SketchLRUCacheStrategy();
     count = new Counter(readNoCacheCostPerUnit,
         readCacheCostPerUnit, cacheUpdateCostPerTime);
     rs.open(filePath);
@@ -148,5 +148,7 @@ class Analyser {
     System.out.println("Total Cost if Using Cache: " + count.getCostIfCache() + ".");
     System.out.println("Using Cache Save Cost: " +
         (1.0d - (double)count.getCostIfCache() / count.getCostIfNoCache()) + ".");
+    System.out.println("\n\n\n------------");
+    cs.printRes();
   }
 }
