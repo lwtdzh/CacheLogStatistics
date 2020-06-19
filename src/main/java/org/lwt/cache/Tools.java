@@ -68,7 +68,7 @@ public class Tools {
     }
   }
 
-  public static class LRU<K, V> {
+  public static class LRU<K, V> implements CacheQueue<K, V> {
     // Class Node.
     private static class Node<K, V> {
       public Node(K key, V val) {
@@ -198,5 +198,37 @@ public class Tools {
       head = node;
     }
 
+  }
+
+  public static String convertBytes(long bytes) {
+    double data = bytes;
+    int unit = 0; // 0: B, 1: KB, 2: MB, 3: GB, 4: TB.
+    while (unit <= 3) {
+      if (data > 1024.0d) {
+        data /= 1024.0d;
+        ++unit;
+      } else {
+        break;
+      }
+    }
+    String unitStr = null;
+    switch (unit) {
+    case 0:
+      unitStr = "B";
+      break;
+    case 1:
+      unitStr = "KB";
+      break;
+    case 2:
+      unitStr = "MB";
+      break;
+    case 3:
+      unitStr = "GB";
+      break;
+    case 4:
+      unitStr = "TB";
+      break;
+    }
+    return String.format("%.2f", data) + unitStr;
   }
 }
