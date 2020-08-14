@@ -109,7 +109,7 @@ class Analyser implements Runnable {
     cs = new SketchCacheStrategy((Integer)params.get("d"),
         (Integer)params.get("w"), (Integer)params.get("cacheMaxLen"),
         (Integer)params.get("divThreshold"), (Integer)params.get("putThreshold"),
-        "LRU");
+        "WTINYFLU");
 //    cs = new WTinyFLUCacheStrategy(cacheMaxLen);
     count = new Counter(readNoCacheCostPerUnit,
         readCacheCostPerUnit, cacheUpdateCostPerTime);
@@ -162,10 +162,13 @@ class Analyser implements Runnable {
           ++writeCacheTimes;
         } else { // cached.
           count.record(keys.get(i).b, true);
+          cacheReadBytes += keys.get(i).b;
         }
       }
       if (!allCached) {
         ++cacheReadTimes;
+      } else {
+        cacheReadBytes -= req.getReadLen();
       }
     } //  End While.
 
@@ -225,8 +228,8 @@ class Analyser implements Runnable {
       BufferedOutputStream bos = new BufferedOutputStream(fos);
       List<Thread> threadList = new ArrayList<Thread>();
       for (int lruLen = 500; lruLen <= 2000; lruLen += 500) {
-        for (int divThreshold = 2; divThreshold <= 20; divThreshold += 5) {
-          for (int putThreshold = 2; putThreshold <= 12; putThreshold += 3) {
+        for (int divThreshold = 2; divThreshold <= 2; divThreshold += 3) {
+          for (int putThreshold = 1; putThreshold <= 1; putThreshold += 1) {
             if (divThreshold < putThreshold) {
               continue;
             }

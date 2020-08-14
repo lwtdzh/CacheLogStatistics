@@ -1,0 +1,38 @@
+外部使用的话，可以看看这里提供的几个功能：
+1. WTiny-FLU队列：
+    类：WTFLUCacheQueue
+    使用方法：WTiny-FLU维护一个固定size的缓存队列，每第一次访问一个数据（当前缓存队列里没有），将其通过put()接口传入，代表这个数据在这个时刻被访问了一次。某个时刻，运行get()接口可以知道这个key还在不在WTiny-FLU的队列中（不在的话可能就降级从冷存储中读取了）。get()函数内部也会执行一次put()，因为实际场景一次get()就代表这个key被访问了一次，被访问了一次就需要更新它内部的权值了。
+
+2. LRU队列：
+    类：Tools.LRU
+    使用方法：和WTFLUCacheQueue一样。get()方法可以手动指定是否要更新这条数据到LRU队列头部。
+
+3. Sketch：
+    类：Sketch和Div2Sketch
+    使用方法：
+        构造函数Sketch(int d, int w)，d代表sketch每个维度的长度，w代表HASH函数数目。
+        增加权值：add(String key)，代表对这个key在sketch中增加一个权值。
+        获取权值：estimate(key),获取当前key的权值。
+        继承类Div2Sketch用法：使用update(key)更新某个key的权值，使其加1，然后在达到阈值时自动将所有权值除以2。
+
+通过上述组件，可以制造方便的分析工具。例如分析工具Analyser，利用Sketch作为key进入缓存的准入门槛，当每次读取到某个chunk时，将这个chunk的key加入到Div2Sketch，更新一下权值。假设此时该权值达到了放入缓存的阈值，则将其放入缓存队列里，缓存队列可以使用LRU，也可以使用WTiny-FLU。之所以加入Sketch而不是直接使用缓存队列，是因为无论LRU还是WTiny-FLU，只要某个key被访问，就一定放入缓存，实际上这个key可能仅仅访问一次。Sketch这里就相当于一个模型，输出是判断一个chunk是否应该被加入缓存，只是这个模型的输入是chunk的key，而不是其他特征数据。
+    Analyse的逻辑可以简化为：
+    ToolsLRU lru(cacheSize = 1000);
+    Div2Sketch sketch(dimension = 1000, hashNum = 4, 100, 100);
+    std::string chunkKey = std::string:npos;
+    ChunkData *value = nullptr;
+    while (chunkKey = nextReadRequest()) {
+        sketch.update(chunkKey); // 更新准入门槛。
+        if ((value = lru.get(chunkKey, true)) != nullptr) {
+            // 找到chunk在缓存里。直接返回即可。
+            outputValue(chunkKey, value);
+        }
+        // 缓存里没有。
+        value = readFromColdStorage(chunkKey); // 从冷数据里读取。
+        if (sketch.estimate(chunkKey) > THRESHOLD_INPUT_CACHE) {
+            // 达到准入门槛，将数据放入缓存。
+            lru.put(chunkKey, *value);
+        }
+        value->(clean);
+        value = nullptr;
+    }
